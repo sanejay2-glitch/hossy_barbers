@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "542286750516",
+    "project_id": "hossy-barbers",
+    "storage_bucket": "hossy-barbers.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:542286750516:android:e1589b2df5efdedea2fb61",
+        "android_client_info": {
+          "package_name": "com.example.hossy_barbers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBo553EPQYzG2gMbwR1lk_QwGSV5gyvVyY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
