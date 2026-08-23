@@ -33,6 +33,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Firebase Functions local secrets
+/functions/.env
+/functions/.env.*
+!/functions/.env.example
+/functions/node_modules/
+
 # Symbolication related
 app.*.symbols
 

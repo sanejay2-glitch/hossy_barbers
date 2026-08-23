@@ -6,6 +6,11 @@ import 'package:hossy_barbers/features/admin/data/admin_authorization_repository
 import 'package:hossy_barbers/features/admin/presentation/admin_dashboard.dart';
 import 'package:hossy_barbers/features/admin/presentation/admin_login_screen.dart';
 import 'package:hossy_barbers/features/admin/services/admin_auth_service.dart';
+import 'package:hossy_barbers/features/admin/data/business_settings_repository.dart';
+import 'package:hossy_barbers/features/gallery/data/gallery_repository.dart';
+import 'package:hossy_barbers/features/services/data/services_repository.dart';
+import 'package:hossy_barbers/features/reviews/data/reviews_repository.dart';
+import 'package:hossy_barbers/features/booking/data/booking_requests_repository.dart';
 
 class AdminGate extends StatelessWidget {
   const AdminGate({super.key, required this.firebaseState});
@@ -52,7 +57,16 @@ class _AuthorizationCheck extends StatelessWidget {
         if (snapshot.hasError || snapshot.data != true) {
           return _Unauthorized(authService: authService);
         }
-        return AdminDashboard(user: user, authService: authService);
+        final firestore = FirebaseFirestore.instance;
+        return AdminDashboard(
+          user: user,
+          authService: authService,
+          businessSettingsRepository: BusinessSettingsRepository(firestore),
+          servicesRepository: ServicesRepository(firestore),
+          galleryRepository: GalleryRepository(firestore),
+          reviewsRepository: ReviewsRepository(firestore),
+          bookingRequestsRepository: BookingRequestsRepository(firestore),
+        );
       },
     );
   }

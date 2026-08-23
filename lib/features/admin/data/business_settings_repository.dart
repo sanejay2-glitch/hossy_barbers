@@ -17,4 +17,11 @@ class BusinessSettingsRepository {
               : null,
         );
   }
+
+  Future<void> save(BusinessSettings settings) {
+    return _firestore.collection('businessSettings').doc('main').set({
+      ...settings.toMap(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }

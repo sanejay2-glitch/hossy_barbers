@@ -1,11 +1,11 @@
 {
-    "name": "hossy_barbers",
-    "short_name": "hossy_barbers",
+    "name": "Hossy Barbers",
+    "short_name": "Hossy Barbers",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#151412",
+    "theme_color": "#151412",
+    "description": "Precision grooming, made easy. Explore the studio and start your appointment request in a few simple steps.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
