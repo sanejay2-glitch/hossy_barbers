@@ -3,7 +3,7 @@ import 'package:hossy_barbers/features/booking/domain/booking_request.dart';
 class WhatsAppBookingService {
   const WhatsAppBookingService();
 
-  static const defaultBusinessWhatsAppNumber = '+234 913 928 0666';
+  static const defaultBusinessWhatsAppNumber = '+234 910 928 0666';
 
   Uri? createBookingUri(
     BookingRequest request,

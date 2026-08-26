@@ -1,3 +1,5 @@
+import 'package:hossy_barbers/core/constants/development_content.dart';
+
 class BusinessSettings {
   const BusinessSettings({
     required this.businessName,
@@ -7,6 +9,7 @@ class BusinessSettings {
     required this.whatsAppNumber,
     required this.address,
     required this.openingHours,
+    required this.bookingHours,
     required this.socialLinks,
     required this.logoUrl,
     required this.heroImageUrl,
@@ -26,6 +29,7 @@ class BusinessSettings {
   final String whatsAppNumber;
   final String address;
   final Map<String, String> openingHours;
+  final Map<String, String> bookingHours;
   final Map<String, String> socialLinks;
   final String logoUrl;
   final String heroImageUrl;
@@ -37,25 +41,61 @@ class BusinessSettings {
   final String seoTitle;
   final String seoDescription;
 
+  static const initial = BusinessSettings(
+    businessName: DevelopmentContent.businessName,
+    shortTagline: DevelopmentContent.officialTagline,
+    description: DevelopmentContent.aboutDescription,
+    phoneNumber: DevelopmentContent.publicPhoneNumber,
+    whatsAppNumber: DevelopmentContent.whatsappNumber,
+    address: DevelopmentContent.businessAddress,
+    openingHours: DevelopmentContent.openingHours,
+    bookingHours: DevelopmentContent.bookingHours,
+    socialLinks: {},
+    logoUrl: '',
+    heroImageUrl: '',
+    heroEyebrow: 'Barber shop · Benin City',
+    heroHeadline: 'Your beauty,\nour concern.',
+    heroDescription: DevelopmentContent.heroDescription,
+    heroCtaText: '',
+    aboutHeading: 'Grooming with care and attention to detail.',
+    seoTitle: DevelopmentContent.seoTitle,
+    seoDescription: DevelopmentContent.seoDescription,
+  );
+
   factory BusinessSettings.fromMap(Map<String, dynamic> data) {
+    final openingHours = _stringMap(data['openingHours']);
+    final bookingHours = _stringMap(data['bookingHours']);
     return BusinessSettings(
-      businessName: data['businessName'] as String? ?? '',
-      shortTagline: data['shortTagline'] as String? ?? '',
-      description: data['description'] as String? ?? '',
-      phoneNumber: data['phoneNumber'] as String? ?? '',
-      whatsAppNumber: data['whatsAppNumber'] as String? ?? '',
-      address: data['address'] as String? ?? '',
-      openingHours: _stringMap(data['openingHours']),
+      businessName: _valueOrDefault(data, 'businessName', initial.businessName),
+      shortTagline: _valueOrDefault(data, 'shortTagline', initial.shortTagline),
+      description: _valueOrDefault(data, 'description', initial.description),
+      phoneNumber: _valueOrDefault(data, 'phoneNumber', initial.phoneNumber),
+      whatsAppNumber: _valueOrDefault(
+        data,
+        'whatsAppNumber',
+        initial.whatsAppNumber,
+      ),
+      address: _valueOrDefault(data, 'address', initial.address),
+      openingHours: openingHours.isEmpty ? initial.openingHours : openingHours,
+      bookingHours: bookingHours.isEmpty ? initial.bookingHours : bookingHours,
       socialLinks: _stringMap(data['socialLinks']),
       logoUrl: data['logoUrl'] as String? ?? '',
       heroImageUrl: data['heroImageUrl'] as String? ?? '',
-      heroEyebrow: data['heroEyebrow'] as String? ?? '',
-      heroHeadline: data['heroHeadline'] as String? ?? '',
-      heroDescription: data['heroDescription'] as String? ?? '',
+      heroEyebrow: _valueOrDefault(data, 'heroEyebrow', initial.heroEyebrow),
+      heroHeadline: _valueOrDefault(data, 'heroHeadline', initial.heroHeadline),
+      heroDescription: _valueOrDefault(
+        data,
+        'heroDescription',
+        initial.heroDescription,
+      ),
       heroCtaText: data['heroCtaText'] as String? ?? '',
-      aboutHeading: data['aboutHeading'] as String? ?? '',
-      seoTitle: data['seoTitle'] as String? ?? '',
-      seoDescription: data['seoDescription'] as String? ?? '',
+      aboutHeading: _valueOrDefault(data, 'aboutHeading', initial.aboutHeading),
+      seoTitle: _valueOrDefault(data, 'seoTitle', initial.seoTitle),
+      seoDescription: _valueOrDefault(
+        data,
+        'seoDescription',
+        initial.seoDescription,
+      ),
     );
   }
 
@@ -67,6 +107,7 @@ class BusinessSettings {
     'whatsAppNumber': whatsAppNumber,
     'address': address,
     'openingHours': openingHours,
+    'bookingHours': bookingHours,
     'socialLinks': socialLinks,
     'logoUrl': logoUrl,
     'heroImageUrl': heroImageUrl,
@@ -86,5 +127,14 @@ class BusinessSettings {
           .where((entry) => entry.key is String && entry.value is String)
           .map((entry) => MapEntry(entry.key as String, entry.value as String)),
     );
+  }
+
+  static String _valueOrDefault(
+    Map<String, dynamic> data,
+    String key,
+    String fallback,
+  ) {
+    final value = data[key] as String?;
+    return value?.trim().isNotEmpty == true ? value! : fallback;
   }
 }

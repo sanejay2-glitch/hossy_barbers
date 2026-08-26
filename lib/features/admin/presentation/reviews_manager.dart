@@ -1,15 +1,34 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hossy_barbers/app/theme/app_spacing.dart';
 import 'package:hossy_barbers/features/reviews/data/reviews_repository.dart';
 import 'package:hossy_barbers/features/reviews/domain/customer_review.dart';
 
-class ReviewsManager extends StatelessWidget {
+class ReviewsManager extends StatefulWidget {
   const ReviewsManager({super.key, required this.repository});
   final ReviewsRepository repository;
 
   @override
+  State<ReviewsManager> createState() => _ReviewsManagerState();
+}
+
+class _ReviewsManagerState extends State<ReviewsManager> {
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_ensureSummary());
+  }
+
+  Future<void> _ensureSummary() async {
+    try {
+      await widget.repository.ensureSummary();
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) => StreamBuilder<List<CustomerReview>>(
-    stream: repository.watchAll(),
+    stream: widget.repository.watchAll(),
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) {
         return const Center(child: CircularProgressIndicator());
@@ -120,7 +139,7 @@ class ReviewsManager extends StatelessWidget {
     bool value,
   ) async {
     try {
-      await repository.setPublished(review, value);
+      await widget.repository.setPublished(review, value);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -152,7 +171,7 @@ class ReviewsManager extends StatelessWidget {
       return;
     }
     try {
-      await repository.delete(review.id);
+      await widget.repository.delete(review.id);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

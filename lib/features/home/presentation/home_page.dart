@@ -18,6 +18,7 @@ import 'package:hossy_barbers/features/reviews/presentation/reviews_section.dart
 import 'package:hossy_barbers/shared/widgets/page_container.dart';
 import 'package:hossy_barbers/shared/widgets/section_heading.dart';
 import 'package:hossy_barbers/shared/widgets/site_header.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -69,17 +70,17 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             child: StreamBuilder<BusinessSettings?>(
               stream: widget.businessSettingsRepository?.watchMain(),
-              builder: (context, snapshot) => Title(
-                title: snapshot.data?.seoTitle.isNotEmpty == true
-                    ? snapshot.data!.seoTitle
-                    : 'Hossy Barbers',
-                color: Theme.of(context).colorScheme.primary,
-                child: Column(
+              builder: (context, snapshot) {
+                final settings = snapshot.data ?? BusinessSettings.initial;
+                return Title(
+                  title: settings.seoTitle,
+                  color: Theme.of(context).colorScheme.primary,
+                  child: Column(
                   children: [
                     SiteHeader(
                       onNavigate: _navigateTo,
-                      logoUrl: snapshot.data?.logoUrl,
-                      businessName: snapshot.data?.businessName,
+                      logoUrl: settings.logoUrl,
+                      businessName: settings.businessName,
                     ),
                     Expanded(
                       child: SingleChildScrollView(
@@ -89,7 +90,7 @@ class _HomePageState extends State<HomePage> {
                               key: _sections['home'],
                               desktop: desktop,
                               onBook: _openBooking,
-                              settings: snapshot.data,
+                              settings: settings,
                             ),
                             _Services(
                               key: _sections['services'],
@@ -101,27 +102,28 @@ class _HomePageState extends State<HomePage> {
                             ),
                             _About(
                               key: _sections['about'],
-                              settings: snapshot.data,
+                              settings: settings,
                             ),
                             ReviewsSection(
                               repository: widget.reviewsRepository,
                             ),
                             _BookingBanner(
                               onBook: _openBooking,
-                              ctaText: snapshot.data?.heroCtaText,
+                              ctaText: settings.heroCtaText,
                             ),
                             _Contact(
                               key: _sections['contact'],
-                              settings: snapshot.data,
+                              settings: settings,
                             ),
-                            _Footer(settings: snapshot.data),
+                            _Footer(settings: settings),
                           ],
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -347,68 +349,73 @@ class _Services extends StatelessWidget {
                     : constraints.maxWidth >= 560
                     ? 2
                     : 1;
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: services.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: columns == 1 ? 1.2 : 1.35,
-                  ),
-                  itemBuilder: (context, index) {
-                    final service = services[index];
-                    final colors = Theme.of(context).colorScheme;
-                    return Container(
-                      padding: const EdgeInsets.all(AppSpacing.medium),
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(AppSpacing.radius),
-                        border: Border.all(
-                          color: colors.primary.withValues(alpha: .65),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'SIGNATURE SERVICE',
-                            style: AppTextStyles.eyebrow.copyWith(
-                              color: colors.primary,
-                              fontSize: 10,
+                final cardWidth = columns == 1
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - 16 * (columns - 1)) / columns;
+                final colors = Theme.of(context).colorScheme;
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    for (final service in services)
+                      SizedBox(
+                        width: cardWidth,
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.medium),
+                          decoration: BoxDecoration(
+                            color: colors.surface,
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radius,
+                            ),
+                            border: Border.all(
+                              color: colors.primary.withValues(alpha: .65),
                             ),
                           ),
-                          const Spacer(),
-                          Text(
-                            service.name,
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: AppSpacing.xSmall),
-                          Text(service.description),
-                          const SizedBox(height: AppSpacing.medium),
-                          Row(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (service.price?.isNotEmpty == true)
-                                Text(
-                                  service.price!,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: colors.primary,
-                                  ),
+                              Text(
+                                'SIGNATURE SERVICE',
+                                style: AppTextStyles.eyebrow.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 10,
                                 ),
-                              const Spacer(),
-                              if (service.duration?.isNotEmpty == true)
-                                Text(
-                                  service.duration!,
-                                  style: Theme.of(context).textTheme.labelLarge,
-                                ),
+                              ),
+                              Text(
+                                service.name,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: AppSpacing.xSmall),
+                              Text(service.description),
+                              const SizedBox(height: AppSpacing.medium),
+                              Wrap(
+                                spacing: AppSpacing.small,
+                                runSpacing: AppSpacing.xSmall,
+                                alignment: WrapAlignment.spaceBetween,
+                                children: [
+                                  if (service.price?.isNotEmpty == true)
+                                    Text(
+                                      service.price!,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        color: colors.primary,
+                                      ),
+                                    ),
+                                  if (service.duration?.isNotEmpty == true)
+                                    Text(
+                                      service.duration!,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.labelLarge,
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
-                    );
-                  },
+                  ],
                 );
               },
             );
@@ -631,10 +638,7 @@ class _BookingBanner extends StatelessWidget {
   final String? ctaText;
   @override
   Widget build(BuildContext context) => PageContainer(
-    padding: const EdgeInsets.symmetric(
-      horizontal: 20,
-      vertical: AppSpacing.section,
-    ),
+    padding: const EdgeInsets.fromLTRB(20, AppSpacing.section, 20, 0),
     child: Container(
       padding: const EdgeInsets.all(AppSpacing.large),
       decoration: BoxDecoration(
@@ -727,8 +731,6 @@ class _Contact extends StatelessWidget {
   );
 
   List<String> get _contactLines => [
-    if (settings?.phoneNumber.isNotEmpty == true) settings!.phoneNumber,
-    if (settings?.whatsAppNumber.isNotEmpty == true) settings!.whatsAppNumber,
     if (settings?.address.isNotEmpty == true) settings!.address,
     if (settings?.openingHours.isNotEmpty == true)
       settings!.openingHours.entries
@@ -742,36 +744,144 @@ class _ContactDetails extends StatelessWidget {
   final BusinessSettings? settings;
   final List<String> lines;
 
+  Future<void> _openContact(BuildContext context, Uri uri) async {
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.platformDefault,
+        webOnlyWindowName: '_blank',
+      );
+      if (!launched && context.mounted) {
+        _showContactError(context);
+      }
+    } catch (_) {
+      if (context.mounted) _showContactError(context);
+    }
+  }
+
+  void _showContactError(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('The contact action could not be opened.')),
+    );
+  }
+
+  String _digitsOnly(String value) => value.replaceAll(RegExp(r'[^0-9]'), '');
+
+  String _whatsAppDigits(String value) {
+    final digits = _digitsOnly(value);
+    return digits.length == 11 && digits.startsWith('0')
+        ? '234${digits.substring(1)}'
+        : digits;
+  }
+
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      if (lines.isEmpty)
-        const Text(DevelopmentContent.contactDescription)
-      else
-        for (final line in lines)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.small),
-            child: Text(line, style: Theme.of(context).textTheme.bodyLarge),
-          ),
-      if (settings?.socialLinks.isNotEmpty == true) ...[
-        const SizedBox(height: AppSpacing.medium),
-        Wrap(
-          spacing: AppSpacing.small,
-          runSpacing: AppSpacing.small,
-          children: settings!.socialLinks.entries
-              .map(
-                (entry) => Chip(
-                  label: Text(entry.key),
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.outline,
+  Widget build(BuildContext context) {
+    final phoneNumber = settings?.phoneNumber.trim() ?? '';
+    final whatsAppNumber = settings?.whatsAppNumber.trim() ?? '';
+    final hasContactAction =
+        phoneNumber.isNotEmpty || whatsAppNumber.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasContactAction)
+          Wrap(
+            spacing: AppSpacing.small,
+            runSpacing: AppSpacing.small,
+            children: [
+              if (phoneNumber.isNotEmpty)
+                _ContactAction(
+                  icon: Icons.phone_in_talk_outlined,
+                  label: 'Call',
+                  number: phoneNumber,
+                  onTap: () => _openContact(
+                    context,
+                    Uri(scheme: 'tel', path: _digitsOnly(phoneNumber)),
                   ),
                 ),
-              )
-              .toList(),
-        ),
+              if (whatsAppNumber.isNotEmpty)
+                _ContactAction(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  label: 'WhatsApp',
+                  number: whatsAppNumber,
+                  onTap: () => _openContact(
+                    context,
+                    Uri.https('wa.me', _whatsAppDigits(whatsAppNumber)),
+                  ),
+                ),
+            ],
+          ),
+        if (hasContactAction && lines.isNotEmpty)
+          const SizedBox(height: AppSpacing.medium),
+        if (lines.isEmpty && !hasContactAction)
+          const Text(DevelopmentContent.contactDescription)
+        else
+          for (final line in lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.small),
+              child: Text(line, style: Theme.of(context).textTheme.bodyLarge),
+            ),
+        if (settings?.socialLinks.isNotEmpty == true) ...[
+          const SizedBox(height: AppSpacing.medium),
+          Wrap(
+            spacing: AppSpacing.small,
+            runSpacing: AppSpacing.small,
+            children: settings!.socialLinks.entries
+                .map(
+                  (entry) => Chip(
+                    label: Text(entry.key),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
       ],
-    ],
+    );
+  }
+}
+
+class _ContactAction extends StatelessWidget {
+  const _ContactAction({
+    required this.icon,
+    required this.label,
+    required this.number,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String number;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 290,
+    child: OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.all(AppSpacing.medium),
+        alignment: Alignment.centerLeft,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: AppSpacing.small),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: Theme.of(context).textTheme.labelLarge),
+                const SizedBox(height: 2),
+                Text(number, style: Theme.of(context).textTheme.bodyLarge),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 
@@ -806,21 +916,25 @@ class _FooterState extends State<_Footer> {
       child: Wrap(
         runSpacing: AppSpacing.small,
         alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _openAdminAfterDeveloperTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xSmall),
-              child: Text(
-                (widget.settings?.businessName.isNotEmpty == true
-                        ? widget.settings!.businessName
-                        : 'Hossy Barbers')
-                    .toUpperCase(),
-                style: const TextStyle(
-                  color: AppColors.canvas,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  (widget.settings?.businessName.isNotEmpty == true
+                          ? widget.settings!.businessName
+                          : 'Hossy Barbers')
+                      .toUpperCase(),
+                  style: const TextStyle(
+                    color: AppColors.canvas,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
                 ),
               ),
             ),

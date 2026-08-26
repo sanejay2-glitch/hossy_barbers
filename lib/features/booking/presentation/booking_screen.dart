@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hossy_barbers/app/theme/app_spacing.dart';
+import 'package:hossy_barbers/features/admin/data/business_settings_repository.dart';
+import 'package:hossy_barbers/features/admin/domain/business_settings.dart';
 import 'package:hossy_barbers/features/booking/data/booking_requests_repository.dart';
 import 'package:hossy_barbers/features/booking/domain/booking_request.dart';
+import 'package:hossy_barbers/features/booking/services/booking_time_slots.dart';
 import 'package:hossy_barbers/features/gallery/data/gallery_repository.dart';
 import 'package:hossy_barbers/features/gallery/domain/gallery_item.dart';
 import 'package:hossy_barbers/features/services/data/development_services.dart';
@@ -16,6 +19,7 @@ class BookingScreen extends StatefulWidget {
     this.servicesRepository,
     this.galleryRepository,
     this.bookingRequestsRepository,
+    this.businessSettingsRepository,
   });
 
   static const routeName = '/booking';
@@ -23,6 +27,7 @@ class BookingScreen extends StatefulWidget {
   final ServicesRepository? servicesRepository;
   final GalleryRepository? galleryRepository;
   final BookingRequestsRepository? bookingRequestsRepository;
+  final BusinessSettingsRepository? businessSettingsRepository;
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -49,17 +54,73 @@ class _BookingScreenState extends State<BookingScreen> {
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDate(
+    Map<String, String> bookingHours,
+    Service? service,
+  ) async {
     final today = DateUtils.dateOnly(DateTime.now());
+    final lastDate = today.add(const Duration(days: 365));
+    final firstAvailableDate = _firstOpenDate(
+      firstDate: today,
+      lastDate: lastDate,
+      bookingHours: bookingHours,
+      service: service,
+    );
+    if (firstAvailableDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No appointment dates are available right now.'),
+        ),
+      );
+      return;
+    }
     final picked = await showDatePicker(
       context: context,
       firstDate: today,
-      lastDate: today.add(const Duration(days: 365)),
-      initialDate: _date ?? today,
+      lastDate: lastDate,
+      initialDate:
+          _date != null &&
+              BookingTimeSlots.forAppointment(
+                date: _date!,
+                openingHours: bookingHours,
+                service: service,
+              ).isNotEmpty
+          ? _date
+          : firstAvailableDate,
+      selectableDayPredicate: (date) => BookingTimeSlots.forAppointment(
+        date: date,
+        openingHours: bookingHours,
+        service: service,
+      ).isNotEmpty,
     );
     if (picked != null && mounted) {
-      setState(() => _date = picked);
+      setState(() {
+        _date = picked;
+        _time = null;
+      });
     }
+  }
+
+  DateTime? _firstOpenDate({
+    required DateTime firstDate,
+    required DateTime lastDate,
+    required Map<String, String> bookingHours,
+    required Service? service,
+  }) {
+    for (
+      var date = firstDate;
+      !date.isAfter(lastDate);
+      date = date.add(const Duration(days: 1))
+    ) {
+      if (BookingTimeSlots.forAppointment(
+        date: date,
+        openingHours: bookingHours,
+        service: service,
+      ).isNotEmpty) {
+        return date;
+      }
+    }
+    return null;
   }
 
   void _review() {
@@ -171,12 +232,16 @@ class _BookingScreenState extends State<BookingScreen> {
                           emailController: _emailController,
                           servicesRepository: widget.servicesRepository,
                           galleryRepository: widget.galleryRepository,
+                          businessSettingsRepository:
+                              widget.businessSettingsRepository,
                           selectedServiceId: _service?.id,
                           selectedReferenceId: _referenceStyle?.id,
                           date: _date,
                           time: _time,
-                          onServiceChanged: (service) =>
-                              setState(() => _service = service),
+                          onServiceChanged: (service) => setState(() {
+                            _service = service;
+                            _time = null;
+                          }),
                           onReferenceChanged: (item) =>
                               setState(() => _referenceStyle = item),
                           onDatePressed: _pickDate,
@@ -236,6 +301,7 @@ class _BookingForm extends StatelessWidget {
     required this.emailController,
     required this.servicesRepository,
     required this.galleryRepository,
+    required this.businessSettingsRepository,
     required this.selectedServiceId,
     required this.selectedReferenceId,
     required this.date,
@@ -251,131 +317,170 @@ class _BookingForm extends StatelessWidget {
   final TextEditingController emailController;
   final ServicesRepository? servicesRepository;
   final GalleryRepository? galleryRepository;
+  final BusinessSettingsRepository? businessSettingsRepository;
   final String? selectedServiceId;
   final String? selectedReferenceId;
   final DateTime? date;
   final String? time;
   final ValueChanged<Service?> onServiceChanged;
   final ValueChanged<GalleryItem?> onReferenceChanged;
-  final VoidCallback onDatePressed;
+  final Future<void> Function(
+    Map<String, String> bookingHours,
+    Service? service,
+  )
+  onDatePressed;
   final ValueChanged<String?> onTimeChanged;
 
   @override
-  Widget build(BuildContext context) => StreamBuilder<List<Service>>(
-    stream: servicesRepository?.watchPublished(),
-    builder: (context, servicesSnapshot) {
-      final services = servicesRepository == null
-          ? developmentServices
-          : servicesSnapshot.data ?? const <Service>[];
-      return StreamBuilder<List<GalleryItem>>(
-        stream: galleryRepository?.watchPublished(),
-        builder: (context, gallerySnapshot) => Column(
-          children: [
-            TextFormField(
-              controller: nameController,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Your name'),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Enter your name'
-                  : null,
-            ),
-            const SizedBox(height: AppSpacing.medium),
-            TextFormField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Phone or WhatsApp number',
-              ),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Enter a phone number'
-                  : null,
-            ),
-            const SizedBox(height: AppSpacing.medium),
-            TextFormField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Email address',
-                helperText: 'Used only for booking updates.',
-              ),
-              validator: (value) {
-                final email = value?.trim() ?? '';
-                return email.contains('@') && email.contains('.')
-                    ? null
-                    : 'Enter a valid email address';
-              },
-            ),
-            const SizedBox(height: AppSpacing.medium),
-            DropdownButtonFormField<String>(
-              initialValue: services.any((item) => item.id == selectedServiceId)
-                  ? selectedServiceId
-                  : null,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Preferred service'),
-              items: services
-                  .map(
-                    (item) => DropdownMenuItem(
-                      value: item.id,
-                      child: Text(item.name),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (serviceId) => onServiceChanged(
-                serviceId == null
-                    ? null
-                    : services.firstWhere((item) => item.id == serviceId),
-              ),
-              validator: (value) => value == null ? 'Select a service' : null,
-            ),
-            if (servicesRepository != null && services.isEmpty) ...[
-              const SizedBox(height: AppSpacing.xSmall),
-              Text(
-                servicesSnapshot.hasError
-                    ? 'Services are unavailable right now. Please try again later.'
-                    : 'There are no bookable services available right now.',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.medium),
-            OutlinedButton.icon(
-              onPressed: onDatePressed,
-              icon: const Icon(Icons.calendar_today_outlined),
-              label: Text(
-                date == null
-                    ? 'Choose preferred date'
-                    : '${date!.day}/${date!.month}/${date!.year}',
-              ),
-            ),
-            const SizedBox(height: AppSpacing.medium),
-            DropdownButtonFormField<String>(
-              initialValue: time,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Preferred time'),
-              items:
-                  const [
-                        'Morning (time to confirm)',
-                        'Afternoon (time to confirm)',
-                        'Evening (time to confirm)',
-                      ]
+  Widget build(BuildContext context) => StreamBuilder<BusinessSettings?>(
+    stream: businessSettingsRepository?.watchMain(),
+    builder: (context, settingsSnapshot) {
+      final bookingHours =
+          settingsSnapshot.data?.bookingHours.isNotEmpty == true
+          ? settingsSnapshot.data!.bookingHours
+          : BusinessSettings.initial.bookingHours;
+      return StreamBuilder<List<Service>>(
+        stream: servicesRepository?.watchPublished(),
+        builder: (context, servicesSnapshot) {
+          final services = servicesRepository == null
+              ? developmentServices
+              : servicesSnapshot.data ?? const <Service>[];
+          Service? selectedService;
+          for (final service in services) {
+            if (service.id == selectedServiceId) {
+              selectedService = service;
+              break;
+            }
+          }
+          final slots = date == null
+              ? const <String>[]
+              : BookingTimeSlots.forAppointment(
+                  date: date!,
+                  openingHours: bookingHours,
+                  service: selectedService,
+                );
+          return StreamBuilder<List<GalleryItem>>(
+            stream: galleryRepository?.watchPublished(),
+            builder: (context, gallerySnapshot) => Column(
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'Your name'),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Enter your name'
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.medium),
+                TextFormField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone or WhatsApp number',
+                  ),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Enter a phone number'
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.medium),
+                TextFormField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Email address',
+                    helperText: 'Used only for booking updates.',
+                  ),
+                  validator: (value) {
+                    final email = value?.trim() ?? '';
+                    return email.contains('@') && email.contains('.')
+                        ? null
+                        : 'Enter a valid email address';
+                  },
+                ),
+                const SizedBox(height: AppSpacing.medium),
+                DropdownButtonFormField<String>(
+                  initialValue:
+                      services.any((item) => item.id == selectedServiceId)
+                      ? selectedServiceId
+                      : null,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Preferred service',
+                  ),
+                  items: services
                       .map(
-                        (item) =>
-                            DropdownMenuItem(value: item, child: Text(item)),
+                        (item) => DropdownMenuItem(
+                          value: item.id,
+                          child: Text(item.name),
+                        ),
                       )
                       .toList(),
-              onChanged: onTimeChanged,
-              validator: (value) =>
-                  value == null ? 'Select a preferred time' : null,
+                  onChanged: (serviceId) => onServiceChanged(
+                    serviceId == null
+                        ? null
+                        : services.firstWhere((item) => item.id == serviceId),
+                  ),
+                  validator: (value) =>
+                      value == null ? 'Select a service' : null,
+                ),
+                if (servicesRepository != null && services.isEmpty) ...[
+                  const SizedBox(height: AppSpacing.xSmall),
+                  Text(
+                    servicesSnapshot.hasError
+                        ? 'Services are unavailable right now. Please try again later.'
+                        : 'There are no bookable services available right now.',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.medium),
+                OutlinedButton.icon(
+                  onPressed: () => onDatePressed(bookingHours, selectedService),
+                  icon: const Icon(Icons.calendar_today_outlined),
+                  label: Text(
+                    date == null
+                        ? 'Choose preferred date'
+                        : '${date!.day}/${date!.month}/${date!.year}',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.medium),
+                DropdownButtonFormField<String>(
+                  initialValue: slots.contains(time) ? time : null,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'Preferred time',
+                    helperText: date == null
+                        ? 'Choose a date to see available appointment times.'
+                        : 'Times follow the selected service and booking hours.',
+                  ),
+                  items: slots
+                      .map(
+                        (slot) =>
+                            DropdownMenuItem(value: slot, child: Text(slot)),
+                      )
+                      .toList(),
+                  onChanged: slots.isEmpty ? null : onTimeChanged,
+                  validator: (value) {
+                    if (date == null) return 'Choose a preferred date';
+                    if (slots.isEmpty) {
+                      return 'No appointment times are available';
+                    }
+                    return value == null ? 'Select a preferred time' : null;
+                  },
+                ),
+                const SizedBox(height: AppSpacing.large),
+                _ReferenceStylePicker(
+                  items: gallerySnapshot.data ?? const [],
+                  selectedReferenceId: selectedReferenceId,
+                  onChanged: onReferenceChanged,
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.large),
-            _ReferenceStylePicker(
-              items: gallerySnapshot.data ?? const [],
-              selectedReferenceId: selectedReferenceId,
-              onChanged: onReferenceChanged,
-            ),
-          ],
-        ),
+          );
+        },
       );
     },
   );

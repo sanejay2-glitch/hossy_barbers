@@ -11,6 +11,7 @@ import 'package:hossy_barbers/features/booking/presentation/payment_screen.dart'
 import 'package:hossy_barbers/features/gallery/data/gallery_repository.dart';
 import 'package:hossy_barbers/features/home/presentation/home_page.dart';
 import 'package:hossy_barbers/features/reviews/data/reviews_repository.dart';
+import 'package:hossy_barbers/features/reviews/presentation/reviews_page.dart';
 import 'package:hossy_barbers/features/services/data/services_repository.dart';
 
 class HossyBarbersApp extends StatelessWidget {
@@ -59,6 +60,10 @@ class HossyBarbersApp extends StatelessWidget {
                 galleryRepository: firebaseState == FirebaseAppState.ready
                     ? GalleryRepository(FirebaseFirestore.instance)
                     : null,
+                businessSettingsRepository:
+                    firebaseState == FirebaseAppState.ready
+                    ? BusinessSettingsRepository(FirebaseFirestore.instance)
+                    : null,
                 bookingRequestsRepository:
                     firebaseState == FirebaseAppState.ready
                     ? BookingRequestsRepository(FirebaseFirestore.instance)
@@ -68,6 +73,14 @@ class HossyBarbersApp extends StatelessWidget {
           case PaymentScreen.routeName:
             return MaterialPageRoute<void>(
               builder: (_) => const PaymentScreen(),
+            );
+          case ReviewsPage.routeName:
+            return MaterialPageRoute<void>(
+              builder: (_) => ReviewsPage(
+                repository: firebaseState == FirebaseAppState.ready
+                    ? ReviewsRepository(FirebaseFirestore.instance)
+                    : null,
+              ),
             );
           case AdminLoginScreen.routeName:
             return MaterialPageRoute<void>(

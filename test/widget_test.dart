@@ -73,4 +73,19 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('direct reviews deep link resolves to ratings and reviews', (
+    tester,
+  ) async {
+    tester.binding.platformDispatcher.defaultRouteNameTestValue = '/reviews';
+    addTearDown(
+      tester.binding.platformDispatcher.clearDefaultRouteNameTestValue,
+    );
+
+    await tester.pumpWidget(const HossyBarbersApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ratings & reviews'), findsWidgets);
+    expect(find.text('All published reviews'), findsOneWidget);
+  });
 }

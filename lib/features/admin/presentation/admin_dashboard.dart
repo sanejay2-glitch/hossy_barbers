@@ -11,7 +11,9 @@ import 'package:hossy_barbers/features/admin/presentation/services_manager.dart'
 import 'package:hossy_barbers/features/admin/presentation/reviews_manager.dart';
 import 'package:hossy_barbers/features/admin/presentation/booking_requests_manager.dart';
 import 'package:hossy_barbers/features/admin/presentation/admin_booking_notifications.dart';
+import 'package:hossy_barbers/features/admin/presentation/admin_analytics_panel.dart';
 import 'package:hossy_barbers/features/admin/services/admin_auth_service.dart';
+import 'package:hossy_barbers/features/admin/services/admin_analytics_service.dart';
 import 'package:hossy_barbers/features/admin/services/booking_notification_read_store.dart';
 import 'package:hossy_barbers/features/admin/services/booking_notification_service.dart';
 import 'package:hossy_barbers/features/gallery/data/gallery_repository.dart';
@@ -323,6 +325,13 @@ class _DashboardView extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.large),
             _BusinessReadiness(repository: businessSettingsRepository),
+            const SizedBox(height: AppSpacing.large),
+            AdminAnalyticsPanel(
+              service: AdminAnalyticsService(
+                bookingRequestsRepository: bookingRequestsRepository,
+                reviewsRepository: reviewsRepository,
+              ),
+            ),
           ],
         ),
       ),

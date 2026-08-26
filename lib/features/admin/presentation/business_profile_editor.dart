@@ -30,6 +30,7 @@ class _BusinessProfileEditorState extends State<BusinessProfileEditor> {
   final _whatsApp = TextEditingController();
   final _address = TextEditingController();
   final _openingHours = TextEditingController();
+  final _bookingHours = TextEditingController();
   final _socialLinks = TextEditingController();
   final _heroEyebrow = TextEditingController();
   final _heroHeadline = TextEditingController();
@@ -57,6 +58,7 @@ class _BusinessProfileEditorState extends State<BusinessProfileEditor> {
       _whatsApp,
       _address,
       _openingHours,
+      _bookingHours,
       _socialLinks,
       _heroEyebrow,
       _heroHeadline,
@@ -74,23 +76,24 @@ class _BusinessProfileEditorState extends State<BusinessProfileEditor> {
   void _load(BusinessSettings? settings) {
     if (_loaded) return;
     _loaded = true;
-    _existing = settings;
-    if (settings == null) return;
-    _businessName.text = settings.businessName;
-    _tagline.text = settings.shortTagline;
-    _description.text = settings.description;
-    _phone.text = settings.phoneNumber;
-    _whatsApp.text = settings.whatsAppNumber;
-    _address.text = settings.address;
-    _openingHours.text = _formatMap(settings.openingHours);
-    _socialLinks.text = _formatMap(settings.socialLinks);
-    _heroEyebrow.text = settings.heroEyebrow;
-    _heroHeadline.text = settings.heroHeadline;
-    _heroDescription.text = settings.heroDescription;
-    _heroCtaText.text = settings.heroCtaText;
-    _aboutHeading.text = settings.aboutHeading;
-    _seoTitle.text = settings.seoTitle;
-    _seoDescription.text = settings.seoDescription;
+    final initialSettings = settings ?? BusinessSettings.initial;
+    _existing = initialSettings;
+    _businessName.text = initialSettings.businessName;
+    _tagline.text = initialSettings.shortTagline;
+    _description.text = initialSettings.description;
+    _phone.text = initialSettings.phoneNumber;
+    _whatsApp.text = initialSettings.whatsAppNumber;
+    _address.text = initialSettings.address;
+    _openingHours.text = _formatMap(initialSettings.openingHours);
+    _bookingHours.text = _formatMap(initialSettings.bookingHours);
+    _socialLinks.text = _formatMap(initialSettings.socialLinks);
+    _heroEyebrow.text = initialSettings.heroEyebrow;
+    _heroHeadline.text = initialSettings.heroHeadline;
+    _heroDescription.text = initialSettings.heroDescription;
+    _heroCtaText.text = initialSettings.heroCtaText;
+    _aboutHeading.text = initialSettings.aboutHeading;
+    _seoTitle.text = initialSettings.seoTitle;
+    _seoDescription.text = initialSettings.seoDescription;
   }
 
   Future<void> _pickImage(bool isLogo) async {
@@ -159,6 +162,7 @@ class _BusinessProfileEditorState extends State<BusinessProfileEditor> {
           whatsAppNumber: _whatsApp.text.trim(),
           address: _address.text.trim(),
           openingHours: _parseMap(_openingHours.text),
+          bookingHours: _parseMap(_bookingHours.text),
           socialLinks: _parseMap(_socialLinks.text),
           logoUrl: logoUrl,
           heroImageUrl: heroImageUrl,
@@ -181,6 +185,7 @@ class _BusinessProfileEditorState extends State<BusinessProfileEditor> {
             whatsAppNumber: _whatsApp.text.trim(),
             address: _address.text.trim(),
             openingHours: _parseMap(_openingHours.text),
+            bookingHours: _parseMap(_bookingHours.text),
             socialLinks: _parseMap(_socialLinks.text),
             logoUrl: logoUrl,
             heroImageUrl: heroImageUrl,
@@ -256,6 +261,11 @@ class _BusinessProfileEditorState extends State<BusinessProfileEditor> {
                     _field(
                       _openingHours,
                       'Opening hours (one “day: hours” entry per line)',
+                      lines: 4,
+                    ),
+                    _field(
+                      _bookingHours,
+                      'Booking request hours (one “day: hours” entry per line)',
                       lines: 4,
                     ),
                     _field(

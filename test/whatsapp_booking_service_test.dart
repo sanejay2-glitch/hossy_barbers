@@ -18,11 +18,11 @@ void main() {
     () {
       final uri = const WhatsAppBookingService().createBookingUri(
         request,
-        '+234 913 928 0666',
+        '+234 910 928 0666',
       );
 
       expect(uri, isNotNull);
-      expect(uri.toString(), contains('wa.me/2349139280666'));
+      expect(uri.toString(), contains('wa.me/2349109280666'));
 
       final queryParameters = uri!.queryParameters;
       expect(queryParameters['text'], contains('Name: Ada'));
@@ -36,7 +36,7 @@ void main() {
     () {
       final uri = const WhatsAppBookingService().createBookingUri(request, '');
 
-      expect(uri.toString(), contains('wa.me/2349139280666'));
+      expect(uri.toString(), contains('wa.me/2349109280666'));
     },
   );
 }

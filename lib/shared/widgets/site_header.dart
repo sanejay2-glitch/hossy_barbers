@@ -90,50 +90,126 @@ class SiteHeader extends StatelessWidget {
   }
 
   void _showMenu(BuildContext context) {
-    showModalBottomSheet<void>(
+    showGeneralDialog<void>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.medium,
-            0,
-            AppSpacing.medium,
-            AppSpacing.large,
-          ),
+      barrierDismissible: true,
+      barrierLabel: 'Close navigation menu',
+      barrierColor: Colors.black.withValues(alpha: .58),
+      transitionDuration: const Duration(milliseconds: 240),
+      pageBuilder: (dialogContext, _, _) => Align(
+        alignment: Alignment.centerRight,
+        child: _PublicNavigationPanel(
+          businessName: businessName,
+          onClose: () => Navigator.of(dialogContext).pop(),
+          onNavigate: (section) {
+            Navigator.of(dialogContext).pop();
+            onNavigate(section);
+          },
+          onBook: () {
+            Navigator.of(dialogContext).pop();
+            Navigator.of(context).pushNamed(BookingScreen.routeName);
+          },
+        ),
+      ),
+      transitionBuilder: (_, animation, _, child) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _PublicNavigationPanel extends StatelessWidget {
+  const _PublicNavigationPanel({
+    required this.businessName,
+    required this.onClose,
+    required this.onNavigate,
+    required this.onBook,
+  });
+
+  final String? businessName;
+  final VoidCallback onClose;
+  final ValueChanged<String> onNavigate;
+  final VoidCallback onBook;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 24,
+      child: SafeArea(
+        child: SizedBox(
+          width: screenWidth < 440 ? screenWidth * .9 : 400,
+          height: double.infinity,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.small,
-                  vertical: AppSpacing.small,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.medium,
+                  AppSpacing.medium,
+                  AppSpacing.small,
+                  AppSpacing.medium,
                 ),
-                child: _BrandName(name: null),
+                child: Row(
+                  children: [
+                    Expanded(child: _BrandName(name: businessName)),
+                    IconButton(
+                      tooltip: 'Close navigation menu',
+                      onPressed: onClose,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
               ),
-              for (final label in const [
-                'Home',
-                'Services',
-                'Gallery',
-                'About',
-                'Contact',
-              ])
-                ListTile(
-                  title: Text(label),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    onNavigate(label.toLowerCase());
-                  },
+              Divider(
+                height: 1,
+                color: Theme.of(context).colorScheme.outline.withValues(
+                  alpha: .55,
                 ),
-              ListTile(
-                leading: const Icon(Icons.calendar_month_outlined),
-                title: const Text('Book appointment'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.of(context).pushNamed(BookingScreen.routeName);
-                },
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.medium,
+                    AppSpacing.medium,
+                    AppSpacing.medium,
+                    AppSpacing.large,
+                  ),
+                  children: [
+                    for (final label in const [
+                      'Home',
+                      'Services',
+                      'Gallery',
+                      'About',
+                      'Contact',
+                    ])
+                      _PublicNavigationItem(
+                        label: label,
+                        onTap: () => onNavigate(label.toLowerCase()),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.medium,
+                  AppSpacing.small,
+                  AppSpacing.medium,
+                  AppSpacing.medium,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onBook,
+                    child: const Text('Book appointment'),
+                  ),
+                ),
               ),
             ],
           ),
@@ -141,6 +217,27 @@ class SiteHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PublicNavigationItem extends StatelessWidget {
+  const _PublicNavigationItem({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: AppSpacing.xSmall),
+    child: ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.small),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+      ),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      trailing: const Icon(Icons.arrow_forward_rounded, size: 18),
+      onTap: onTap,
+    ),
+  );
 }
 
 class _BrandName extends StatelessWidget {
